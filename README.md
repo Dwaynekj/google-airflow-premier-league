@@ -1,4 +1,5 @@
 # Google-BigQuery-Airflow
+https://medium.com/bakdata/data-warehousing-made-easy-with-google-bigquery-and-apache-airflow-bf62e6c727ed
 This project aims to show how fast and easy data management via Airflow and Google Cloud Platform works. 
 This sample integrates the English Premier League data into BigQuery.
 
