@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+set -e
 ## Requirements
 # gcloud 	- https://cloud.google.com/sdk/docs/quickstart-linux
 # jq 		- https://stedolan.github.io/jq/; for MAC: brew install jq
@@ -32,9 +33,10 @@ uuid=$(python -c "import uuid; print(str(uuid.uuid4())[:8].lower())")
 ### set env variables
 export ORG_ID=${ORG_ID}
 export GC_PROJECT_ID=premier-league-${uuid}
-export LOCATION=europe-west1
-BQ_LOCATION=EU
-ZONE=europe-west1-b
+# export GC_PROJECT_ID=premier-league-37b70fdf
+export LOCATION=us-east1
+BQ_LOCATION=US
+ZONE=us-east1-b
 
 ### create project
 echo "create project ..."
@@ -85,7 +87,7 @@ bash create_sql.sh $GC_PROJECT_ID ../bq/sql/goals_per_day.sql view.goals_per_day
 
 ### create bucket
 echo "create bucket ..." && \
-gsutil mb -p ${GC_PROJECT_ID} -l ${BQ_LOCATION} -c multi_regional gs://${GC_PROJECT_ID}/ && \
+gsutil mb -p ${GC_PROJECT_ID} -l ${BQ_LOCATION} -c standard gs://${GC_PROJECT_ID}/ && \
 
 ### create environment airflow
 echo "create airflow environment ..." && \
@@ -96,27 +98,25 @@ gcloud beta composer environments create ${GC_PROJECT_ID} \
 	--disk-size=50GB \
 	--python-version=3 \
 	--machine-type=n1-standard-1 \
-	--image-version=composer-1.7.0-airflow-1.10 && \
+	--image-version=composer-1.17.6-airflow-2.1.4 && \
 
 ### create Airflow connections
 echo "create airflow connections ..." && \
 gcloud composer environments run ${GC_PROJECT_ID} \
-	 --location ${LOCATION} connections -- --delete \
-	 --conn_id=bigquery_default && \
+	 --location ${LOCATION} connections -- delete bigquery_default && \
 
 gcloud composer environments run ${GC_PROJECT_ID} \
-	 --location ${LOCATION} connections -- --add \
-	 --conn_id=bigquery_default --conn_type=google_cloud_platform \
-	 --conn_extra '{"extra__google_cloud_platform__project": "'${GC_PROJECT_ID}'", "extra__google_cloud_platform__key_path": "/home/airflow/gcs/dags/keyfile.json", "extra__google_cloud_platform__scope": "https://www.googleapis.com/auth/cloud-platform"}' && \
+	 --location ${LOCATION} connections -- add bigquery_default \
+	 --conn-type google_cloud_platform \
+	 --conn-extra '{"extra__google_cloud_platform__project": "'${GC_PROJECT_ID}'", "extra__google_cloud_platform__key_path": "/home/airflow/gcs/dags/keyfile.json", "extra__google_cloud_platform__scope": "https://www.googleapis.com/auth/cloud-platform"}' && \
 
 gcloud composer environments run ${GC_PROJECT_ID} \
-	 --location ${LOCATION} connections -- --delete \
-	 --conn_id=google_cloud_default && \
+	 --location ${LOCATION} connections -- delete google_cloud_default && \
 
 gcloud composer environments run ${GC_PROJECT_ID} \
-	 --location ${LOCATION} connections -- --add \
-	 --conn_id=google_cloud_default --conn_type=google_cloud_platform \
-	 --conn_extra '{"extra__google_cloud_platform__project": "'${GC_PROJECT_ID}'", "extra__google_cloud_platform__key_path": "/home/airflow/gcs/dags/keyfile.json", "extra__google_cloud_platform__scope": "https://www.googleapis.com/auth/cloud-platform"}' && \
+	 --location ${LOCATION} connections -- add google_cloud_default \
+	 --conn-type google_cloud_platform \
+	 --conn-extra '{"extra__google_cloud_platform__project": "'${GC_PROJECT_ID}'", "extra__google_cloud_platform__key_path": "/home/airflow/gcs/dags/keyfile.json", "extra__google_cloud_platform__scope": "https://www.googleapis.com/auth/cloud-platform"}' && \
 
 ### create Airflow variables
 echo "create airflow variables ..." && \
@@ -134,7 +134,7 @@ gcloud composer environments storage data import \
     --source /tmp/variables.json && rm /tmp/variables.json && \
 
 gcloud composer environments run ${GC_PROJECT_ID} \
-	 --location ${LOCATION} variables -- --import /home/airflow/gcs/data/variables.json && \
+	 --location ${LOCATION} variables -- import /home/airflow/gcs/data/variables.json && \
 
 ## create gcp service account
 echo "create gcp service account ..." && \

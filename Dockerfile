@@ -3,7 +3,6 @@
 
 FROM python:3.6-slim
 LABEL version="1.0"
-LABEL maintainer="bakdata GmbH"
 
 # Never prompts the user for choices on installation/configuration of packages
 ENV DEBIAN_FRONTEND noninteractive

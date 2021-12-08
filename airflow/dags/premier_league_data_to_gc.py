@@ -33,7 +33,7 @@ dags_folder = os.getenv('DAGS_FOLDER', "./dags")
 description = open(f'{dags_folder}/description.json', 'r').read()
 for key, values in json.loads(description).items():
     default_args = {
-        "owner": "bakdata",
+        "owner": "dj",
         "start_date": datetime(2019, 1, 1),
         "email": [],
         "email_on_failure": False,
